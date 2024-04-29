@@ -1,0 +1,830 @@
+---
+title: "Optimizing research with GPUs on Hoffman2"
+author: "Charles Peterson"
+format: 
+  revealjs: 
+    transition: slide
+    theme: [custom.scss]
+    scrollable: true
+    self-contained: true
+from: markdown+emoji
+---
+
+# :wave: Welcome Everyone!
+
+::: {style="font-size: 0.70em" }
+
+Discover the power of GPU computing to accelerate your research on UCLA's Hoffman2 cluster! This workshop is designed to guide you through the essentials of GPU utilization, enhancing your projects with cutting-edge computational efficiency. :star:
+
+
+:::
+:::: {.columns .fragment}
+::: {.column width="60%"}
+::: {style="font-size: 0.70em" }
+
+:key: Key Topics:
+
+- Understanding GPU architecture and its benefits
+- Techniques for compiling and optimizing GPU code
+- Hands-on access to Hoffman2's advanced GPU resources
+- Utilizing Python and R for GPU computing 
+
+For suggestions: [cpeterson\@oarc.ucla.edu](mailto:cpeterson@oarc.ucla.edu){.email}
+
+:::
+:::
+::: {.column width="40%"}
+::: {style="text-align: center"}
+
+<img src="fullpic.png"/ width="50%">
+
+:::
+:::
+::::
+
+## :open_book: Access the Workshop Files
+
+::: {style="font-size: 0.75em" }
+
+This presentation and accompanying materials are available on :link: [UCLA OARC GitHub Repository](https://github.com/ucla-oarc-hpc/WS_HPC-GPU)
+
+You can view the slides in:
+
+- :page_facing_up: PDF format - WS_HPC-GPU.pdf
+- :globe_with_meridians: HTML format: [Workshop Slides](https://ucla-oarc-hpc.github.io/WS_HPC-GPU)
+
+Each file provides detailed instructions and examples on the various topics covered in this workshop.
+
+> **Note:** :hammer_and_wrench: This presentation was built using [Quarto](https://quarto.org/) and RStudio.
+
+:::: {.columns}
+::: {.column width="60%"}
+
+Clone this repository on Hoffman2 to access the workshop files:
+
+:::
+::: {.column width="40%"}
+```{.bash}
+git clone https://github.com/ucla-oarc-hpc/WS_HPC-GPU.git
+```
+
+:::
+::::
+:::
+
+# GPU Basics
+
+## What are GPUs?
+
+Graphic Processing Units (GPUs) were initially developed for processing graphics and visual operations, as CPUs were too slow for these tasks. The architecture of GPUs allows them to handle massively parallel tasks efficiently.
+
+In the mid-2000s, GPUs began to be used for non-graphical computations. NVIDIA introduced CUDA, a programming language that allows for compiling non-graphic programs on GPUs, spearheading the era of General-Purpose GPU (GPGPU).
+
+ These are founds in everything! 
+For example, PCs, mobile phones, Xbox, Playstations
+
+## Applications of GPUs
+
+::: { style="font-size: 0.80em" }
+
+GPUs are ubiquitous and found in devices ranging from PCs to mobile phones, and gaming consoles like Xbox and PlayStation.
+
+Though initially designed for graphics, GPUs are now used in a wide range of applications.
+
+:::: {.columns}
+::: {.column width="60%" }
+
+- **Machine Learning:** Training and inference especially in Deep Learning neural networks
+- **Large Language Models:** Training for NLP models
+- **Data Science:** Accelerating data processing and analysis
+- **High-Performance Computing:** Simulations and scientific computing
+
+:::
+::: {.column width="40%"}
+
+![](gpucomputing.png){height=80%}
+:::
+::::
+:::
+
+## GPU Performance
+
+:::: {.columns}
+::: {.column width="40%"}
+![](gromacspic.png)
+:::
+::: {.column width="60%"}
+![](gromacschart.png)
+:::
+::::
+
+## The Power of GPUs
+
+The significant speedup offered by GPUs comes from their ability to parallelize operations over thousands of cores, unlike traditional CPUs.
+
+:::: {.columns}
+::: {.column width="40%"}
+
+![](dataset.png)
+
+:::
+::: {.column width="60%"}
+![](cpugpu.png)
+:::
+::::
+
+::: {.footer}
+picture source NVIDIA
+:::
+
+## GPU Workflow
+
+![](codegpuflow.png)
+
+::: {.footer}
+picture source NVIDIA
+:::
+
+## GPU considerations
+
+:::: {.columns}
+::: {.column width="70%"}
+::: {style="font-size: 0.80em" }
+
+- Code Optimization
+  - Some codes is not suitable for GPU
+
+- GPU architecture
+  - Some codes can run more efficiently one some GPUs over others or sometimes not at all  
+  
+- Overhead
+  - Data transfer between CPU and GPU can be costly
+  
+- Memory Management
+  - GPU memory is limited and can be a bottleneck
+
+:::
+:::
+::: {.column width="30%"}
+
+![](gpupic.png)
+:::
+::::
+
+
+## GPUs on Hoffman2
+
+::: {style="font-size: 0.75em" }
+
+There are multiple GPU types available in the cluster. 
+
+Each GPU has a different compute capability, memory size and clock speed. 
+
+| GPU type | # CUDA cores |VMem | SGE option |
+|---------|:-----|------:|:------:|
+| NVIDIA A100      | 6912   |    80 GB |   -l gpu,A100,cuda=1   |
+| Tesla V100     | 5120  |   32 GB |  -l gpu,V100,cuda=1  |
+| RTX 2080 Ti       | 4352    |     10 GB |   -l gpu,RTX2080Ti,cuda=1  |
+| Tesla P4  |  2560 | 8 GB | -l gpu,P4,cuda=1 |
+
+::: {.fragment}
+:::: {.columns }
+::: {.column width="30%"}
+
+Interactive job 
+
+:::
+::: {.column width="70%"}
+
+```{.bash}
+qrsh -l h_data=40G,h_rt=1:00:00,gpu,A100,cuda=1
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="30%"}
+
+Batch submission 
+
+:::
+::: {.column width="70%"}
+
+Add the following to your job script
+
+```{.bash}
+#SBATCH -l gpu,A100,cuda=1
+```
+
+:::
+::::
+::: {.callout-note}
+If you would like to host GPU nodes on Hoffman2 or get `highp` access, please contact us!
+:::
+:::
+:::
+
+## GPU optimization
+
+::: {.callout-warning}
+When you using the `-l gpu` option, this only reserves the GPU for your job. 
+
+You will still need to use GPU optimized software and libraries to take advantage of the GPU's parallel processing power.
+
+:::
+
+The following sections will cover how to compile and run GPU optimized code on Hoffman2.
+
+
+# Compiling GPU Software
+
+## CUDA
+
+::: {style="font-size: 0.80em" }
+
+:::: {.columns}
+::: {.column width="60%"}
+
+CUDA (Compute Unified Device Architecture) is a parallel computing platform and application programming interface (API) from NVIDIA. It allows developers to write programs that execute on GPUs.
+
+:::
+::: {.column width="40%"}
+
+![](cuda.jpeg){height=80%}
+:::
+::::
+
+On Hoffman2, you can compile CUDA code by loading the `cuda` module. This will modify the environment to from the [CUDA toolkit](https://developer.nvidia.com/cuda-toolkit). This Toolkit provides the necessary libraries and compilers to compile and run CUDA code.
+
+:::: {.columns}
+::: {.column width="60%"}
+
+See all available CUDA version
+
+:::
+::: {.column width="40%"}
+
+```{.bash}
+modules_lookup -m cuda
+```
+:::
+::::
+:::: {.columns}
+::: {.column width="60%"}
+Loading the CUDA 11.8 Toolkit
+:::
+::: {.column width="40%"}
+
+```{.bash}
+module load cuda/11.8
+```
+:::
+::::
+:::
+
+## CUDA libraries
+
+![](gpulibraries.png){fig-align="center"}
+
+## CUDA code example 
+
+![](cudacode.png){fig-align="center"}
+
+::: {.footer}
+picture source NVIDIA
+:::
+
+## CUDA code example
+
+::: {style="font-size: 0.80em" }
+
+We will so a simple example of a CUDA code that does a Matrix multiplication (1024x1024).
+
+- Files are in the `MatrixMult` folder
+  - `Matrix-cpu.cpp` file contains CPU (serial) code
+  - `Matrix-gpu.cu` file contains the CUDA code
+  - `MatrixMult.job` job submission file
+
+:::: {.columns}
+::: {.column width="40%"}
+
+Loading modules
+
+:::
+::: {.column width="60%"}
+
+```{.bash}
+module load gcc/10.2.0
+module load cuda/12.3
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="40%"}
+
+Compiling code
+
+:::
+::: {.column width="60%"}
+```{.bash}
+g++ -o Matrix-cpu Matrix-cpu.cpp
+nvcc -o Matrix-gpu Matrix-gpu.cu
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="40%"}
+
+Submitting job
+
+:::
+::: {.column width="60%"}
+
+```{.bash}
+qsub MatrixMult.job
+```
+
+:::
+::::
+:::
+
+## GPU software
+
+::: {style="font-size: 0.80em" }
+
+Be on the lookout for GPU optimized software for your research!
+
+Other GPU platforms include:
+
+:::: {.columns}
+::: {.column width="50%"}
+
+- [NVIDIA's HPC SDK](https://developer.nvidia.com/hpc-sdk) (Software Developemnt Kit)
+   - C/C++/Fortran compilers, Math libraries, and Open MPI
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+modules_lookup -m hpcsdk
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="50%"}
+
+- [AMD ROCm](https://www.amd.com/en/products/software/rocm.html) (Radeon Open Compute)
+   - For AMD GPUs
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+modules_lookup -m amd
+```
+
+:::
+::::
+:::
+
+   
+# Using Python/R for GPU Computing
+
+## GPUs for Python and R
+
+::: { style="font-size: 0.75em"}
+
+There are several Python and R packages that use GPUs for varsious data-intensives tasks, like Machine Learning, Deep Learning, and large-scale data processing.
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Python:
+
+- [TensorFlow](https://www.tensorflow.org/): One of the most widely used libraries for machine learning and deep learning that supports GPUs for acceleration.
+- [PyTorch](https://pytorch.org/): A popular library for deep learning that features strong GPU acceleration and is favored for its flexibility and speed.
+- [cuPy](https://cupy.dev/): A library that provides GPU-accelerated equivalents to NumPy functions, facilitating easy transitions from CPU to GPU.
+- [RAPIDS](https://rapids.ai/): A suite of open-source software libraries built on CUDA-X AI, providing the ability to execute end-to-end data science and analytics pipelines entirely on GPUs.
+- [Numba](https://numba.pydata.org/): An open-source JIT compiler that translates a subset of Python and NumPy code into fast machine code, with capabilities for running on GPUs.
+- [DASK](https://www.dask.org/): Python library for parallel computing maintained
+
+:::
+::: {.column width="50%"}
+
+R: 
+
+- [gputools](https://github.com/maweigert/gputools): Provides a variety of GPU-enabled functions, including matrix operations, solving linear equations, and hierarchical clustering.
+- [cudaBayesreg](https://github.com/cran/cudaBayesreg): Designed for Bayesian regression modeling on NVIDIA GPUs, using CUDA.
+- [gpuR](https://github.com/cdeterman/gpuR): An R package that interfaces with both OpenCL and CUDA to allow R users to access GPU functions for accelerating matrix algebra and operations.
+- [Torch for R](https://torch.mlverse.org/): An R machine learning framework based on PyTorch
+- [TensorFlow for R](https://tensorflow.rstudio.com/): An R interface to a Python build of TensorFlow
+
+:::
+::::
+:::
+
+## TensorFlow and PyTorch
+
+::: { style="font-size: 0.75em"}
+
+Installing TensorFlow and PyTorch on Hoffman2 is straightforward using the Anaconda package manager. (Check out my [Workshop on using Anaconda](https://github.com/ucla-oarc-hpc/H2HH_anaconda))
+
+
+:::: {.columns}
+::: {.column width="40%"}
+
+Create a new conda environmnet with CUDA tools.
+
+:::
+::: {.column width="60%"}
+
+```{.bash}
+export PYTHON_VER=3.9
+export CUDA_TK_VER=11.8
+module load anaconda3/2023.03
+conda create -n tf_torch_gpu python=${PYTHON_VER} cudatoolkit=${CUDA_TK_VER} pandas cudnn -c anaconda -c conda-forge -c nvidia -y
+conda activate tf_torch_gpu
+```
+:::
+::::
+:::: {.columns}
+::: {.column width="40%"}
+
+Install TensorFlow/PyTorch with GPU support and the NVIDIA libraries
+:::
+::: {.column width="60%"}
+
+```{.bash}
+python3 -m pip install tensorflow[and-cuda]==2.14
+pip3 install tensorrt tensorrt-bindings tensorrt-libs --extra-index-url https://pypi.nvidia.com
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu${CUDA_TK_VER//./}
+pip3 install scikit-learn
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="40%"}
+Verify the TensorFlow installation. Will only work if you are on a GPU-enabled node.
+:::
+::: {.column width="60%"}
+
+```{.bash}
+# TensofFlow Test:
+python -c "import tensorflow as tf; print('TensorFlow is using:', ('GPU: ' + tf.test.gpu_device_name()) if tf.test.is_gpu_available() else 'CPU')"
+
+# PyTorch Test:
+python -c "import torch; print('PyTorch is using:', ('GPU: ' + torch.cuda.get_device_name(0)) if torch.cuda.is_available() else 'CPU')"
+```
+
+:::
+::::
+:::
+
+## :dress: Fashion MNIST
+
+::: {style="font-size: 0.60em" }
+
+This example focuses on the "Fashion MNIST" dataset, a collection used frequently in machine learning for image recognition tasks.
+
+Approach:
+
+- We will use TensorFlow to train a Netural Net model for predicting fashion categories.
+
+Dataset Overview:
+
+- :camera_flash: **Images:** 28x28 grayscale images of fashion products.
+- :bar_chart: **Categories:** 10, with 7,000 images per category.
+- :abacus: **Total Images:** 70,000.
+
+![](mnist.png){width=60%}
+
+:::
+
+## Runing Tensorflow
+
+::: { style="font-size: 0.85em"}
+
+Now that we have TensorFlow installed, we can run some examples to test the GPU acceleration.
+
+Files in the `TF-Torch` folder contain examples of using TensorFlow on Hoffman2.
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Get a GPU node
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+qrsh -l h_data=40G,h_rt=1:00:00,gpu,A100,cuda=1
+```   
+
+:::
+::::
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Set up your TensorFlow environment
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+module load anaconda3/2023.03
+conda activate tf_torch_gpu
+```   
+
+:::
+::::
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Run CPU example
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+python minst-train-cpu.py
+```   
+
+:::
+::::
+
+:::: {.columns}
+::: {.column width="50%"}
+
+Run GPU example
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+python minst-train-gpu.py
+```   
+
+:::
+::::
+:::
+
+
+## DNA classification with PyTorch
+
+::: { style="font-size: 0.75em"}
+:::: {.columns}
+::: {.column width="70%"}
+
+:dna: DNA Sequence Classification with PyTorch
+
+- :dna: **Objective:** Create a model to classify DNA sequences into 'gene' or 'non-gene' regions.
+- **Gene Regions:** Segments of DNA containing codes for protein production.
+- **Dataset Creation:** Generate random DNA sequences labeled as 'gene' or 'non-gene'.
+
+
+:::
+::: {.column width="30%"}
+<img src="DNA.png" alt="DNA Illustration">
+:::
+::::
+- :robot: **Model Development:** Use PyTorch to build a model predicting the presence of 'gene' regions.
+- :rocket: **Leveraging GPUs:** Utilize the parallel processing power of GPUs for efficient training.
+:::
+
+## Running PyTorch
+
+::: { style="font-size: 0.85em"}
+
+With PyTorch installed in the same Anaconda environment, we can now run the DNA classification example.
+
+
+:::: {.columns}
+::: {.column width="50%"}
+
+When running PyTorch on the GPU 
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+```
+
+:::
+::::
+:::: {.columns}
+::: {.column width="50%"}
+
+Force running PyTorch on the GPU 
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+device = torch.device('cpu')
+```
+
+:::
+::::
+:::: {.columns .fragment}
+::: {.column width="50%"}
+
+Run example
+
+:::
+::: {.column width="50%"}
+
+```{.bash}
+python dnatorch.py
+```   
+
+:::
+::::
+:::
+
+
+## Rapids for Genomic Data Analysis
+
+::: {style="font-size: 0.70em" }
+
+:::: {.columns}
+::: {.column width="50%" }
+
+Processing large genomic datasets such as VCF files can be computationally intensive and time-consuming. Leveraging GPU acceleration can significantly reduce processing times, allowing for more rapid data analysis and insights.
+
+:::
+::: {.column width="50%" }
+
+![](rapids.png){width=80%}
+
+:::
+::::
+
+We will
+
+- Applying conditions to filter dataframes based on depth, quality, and allele frequency.
+- Grouping data by chromosome and calculating mean statistics for depth, quality, and allele frequency.
+- Speed comparison of these operations on GPU versus CPU.
+
+Rapids is a suite of open-source software libraries and APIs built on CUDA to enable execution of end-to-end data science and analytics pipelines on GPUs. cuDF is a GPU DataFrame library for loading, joining, aggregating, filtering, and otherwise manipulating data.
+
+:::
+
+## Install Rapids
+
+- RAPIDS: A suite of open-source software libraries and APIs built on CUDA to enable execution of end-to-end data science and analytics pipelines on GPUs.
+- cuDF: Part of the RAPIDS ecosystem, cuDF is a GPU DataFrame library for loading, joining, aggregating, filtering, and otherwise manipulating data.
+
+```{.bash}
+module load anaconda3/2023.03
+conda create -n myrapids -c rapidsai -c conda-forge -c nvidia  \
+    rapids=24.04 python=3.11 cuda-version=11.8 -y
+conda activate myrapids
+```
+
+## Running Rapids
+
+::: {style="font-size: 0.70em" }
+
+In this example, we will use cuDF to load and filter genomic data efficiently using GPU accelaration
+
+Files in the `rapids` folder 
+
+- `rapids_analysis-gpu.py` - GPU version 
+- `rapids_analysis-cpu.py` - CPU version
+
+The `rapid_analysis.job` will submit the job to the Hoffman2 cluster.
+
+In this file, the line `#$ -l gpu,V100` will submit this job to the V100 GPU nodes.
+
+:::: {.columns .fragment}
+::: {.column width="50%" }
+
+Running Rapids
+
+:::
+::: {.column width="50%" }
+
+```{.bash}
+qsub rapids_analysis.job
+```
+
+:::
+::::
+:::
+
+## :droplet: H2O.ai ML Example
+
+::: {style="font-size: 0.70em" }
+:::: {.columns}
+::: {.column width="50%" }
+
+- [H2O.ai](https://h2o.ai/) is an open-source platform for machine learning and AI.
+- We will work through an example from [H2o-tutorials](https://github.com/h2oai/h2o-tutorials).
+- The focus is on the [Combined Cycle Power Plant dataset](https://archive.ics.uci.edu/dataset/294/combined+cycle+power+plant).
+- :star: **Objective:** Predict the energy output of a Power Plant using temperature, pressure, humidity, and exhaust vacuum values.
+- This example, we will use the R API, but H2O.ai has a Python API as well
+- We will use XGBoost, a popular gradient boosting algorithm, to train the model.
+
+:::
+::: {.column width="50%" }
+![](powerplant.png){width=90%}
+:::
+::::
+:::
+
+## Instaling H2O.ai
+
+::: {style="font-size: 0.85em" }
+
+We will use R and install the H2O.ai package to run the example.
+
+- Setting up the environment
+
+``` {.bash}
+module load cuda/11.8 
+module load gcc/10.2.0
+module load R/4.3.0
+```
+
+- Installing H2O.ai in R
+
+```{.R}
+install.packages(c("RCurl", "jsonlite"))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
+```
+
+:::
+
+## Running H2O.ai
+
+::: {style="font-size: 0.85em" }
+
+In the `h2oai` folder, the `h2oaiXGBoost.R` script the code to run XGBoost on the Combined Cycle Power Plant dataset.
+
+:::: {.columns}
+::: {.column width="50%" }
+
+The `h2oML-gpu.job` file will submit the job to the Hoffman2 cluster on a GPU node.
+
+:::
+::: {.column width="50%" }
+
+```{.bash}
+qsub h2oML-gpu.job
+```   
+
+:::
+::::
+:::: {.columns}
+::: {.column width="50%" }
+
+The `h2oML-cpu.job` file will submit the job to the Hoffman2 cluster on a CPU node.
+
+:::
+::: {.column width="50%" }
+
+```{.bash}
+qsub h2oML-cpu.job
+```
+
+:::
+::::
+
+The h2o.ai functions will automatically detect the GPU and use it for training.
+
+:::
+
+# Wrap up
+
+Hoffman2 has the resources and tools to help you leverage the power of GPUs for your research.
+
+Main Takeaways:
+
+- Use `-l gpu` option to reserve a GPU node
+- Compile GPU optimize code with CUDA
+- Use Python and R packages for GPU computing
+
+## :clap: Thanks for Joining! :heart:
+
+::: { style="font-size: 0.60em" }
+
+Questions? Comments?
+
+- [cpeterson\@oarc.ucla.edu](mailto:cpeterson@oarc.ucla.edu){.email}
+
+- Look at for more [Hoffman2 workshops](https://idre.ucla.edu/calendar)
+
+
+:::{ style="text-align: center" }
+
+<img src="padfoot.jpeg"/ width="40%" height="40%">
+
+:::
+:::

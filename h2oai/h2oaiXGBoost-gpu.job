@@ -1,0 +1,12 @@
+#!/bin/bash
+#$ -cwd
+#$ -o h2oaiXGBoost-gpu.$JOB_ID
+#$ -j y
+#$ -l h_rt=1:00:00,h_data=40G
+#$ -l gpu,V100
+
+. /u/local/Modules/default/init/modules.sh
+module load gcc/10.2.0
+module load R/4.3.0
+
+Rscript h2oaiXGBoost.R

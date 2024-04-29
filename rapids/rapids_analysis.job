@@ -1,0 +1,17 @@
+#!/bin/bash
+#$ -cwd
+#$ -o rapids_analysis.$JOB_ID
+#$ -j y
+#$ -l h_rt=1:00:00,h_data=20G
+#$ -l gpu,V100
+
+. /u/local/Modules/default/init/modules.sh
+module load anaconda3/2023.03
+
+conda activate myrapids
+
+echo "Running CPU version"
+python rapids_analysis-cpu.py 
+
+echo "Running GPU version"
+python rapids_analysis-gpu.py > rapids_analysis-gpu.out
