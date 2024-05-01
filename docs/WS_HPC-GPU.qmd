@@ -29,6 +29,7 @@ from: markdown+emoji
 - :brain: **Understanding GPU architecture** and its benefits
 - :computer: **Hands-on access** to Hoffman2's advanced GPU resources
 - :snake: **Utilizing Python and R** for GPU computing
+- **RPyLab** - A container with RStudio and Jupyter with GPU support (experimental)
 
 For suggestions: [cpeterson\@oarc.ucla.edu](mailto:cpeterson@oarc.ucla.edu){.email}
 
@@ -53,8 +54,7 @@ You can view the slides in:
 
 - :page_facing_up: PDF format - WS_HPC-GPU.pdf
 - :globe_with_meridians: HTML format: [Workshop Slides](https://ucla-oarc-hpc.github.io/WS_HPC-GPU)
-
-Each file provides detailed instructions and examples on the various topics covered in this workshop.
+- :movie_camera: Recordings can be found on our [BOX account](https://ucla.box.com/s/6fsinqhvsv3ywf9wmg30565iw7l8wvt1)
 
 > **Note:** :hammer_and_wrench: This presentation was built using [Quarto](https://quarto.org/) and RStudio.
 
@@ -864,5 +864,127 @@ Questions? Comments?
 <img src="padfoot.jpeg"/ width="40%" height="40%">
 
 :::
+:::
+
+# RPylab demo
+
+## RPylab
+
+::: { style="font-size: 0.80em" }
+
+This is an experimental setup that I made that can run both RStudio and Jupyter on Hoffman2.
+
+This environment has many loaded packages (mostly data science related)
+
+A lot of these packages are optimized with Intel's OneAPI with MKL and GPU support
+
+:::: {.columns}
+::: {.column width="50%" }
+
+This is built using Docker and can be ran on any system with Apptainer
+
+:::
+::: {.column width="50%" }
+
+```{.bash}
+apptainer pull docker://ghcr.io/charliecpeterson/rpylab:rpylab-R4.3.3-python-3.10.10-oneapi-gpu
+```
+
+:::
+::::
+
+This is a pretty large container so it may some time to download (I already have it on Hoffman2). I'm working on some minimal versions without the many packages and well as non-GPU versions.
+
+::: {.callout-warning}
+This is still a work in progress 
+:::
+
+:::
+
+## Running RStudio
+
+::: { style="font-size: 0.80em" }
+
+This RStudio has TensorFlow and Torch for R installed with GPU support and MKL as well as many data science related R packages.
+
+You can also run Python within this. Same Python as with Jupyter.
+
+- Making tmp files for Rstudio
+
+```{.bash}
+mkdir -pv $SCRATCH/rstudiotmp/var/lib
+mkdir -pv $SCRATCH/rstudiotmp/var/run
+mkdir -pv $SCRATCH/rstudiotmp/tmp
+```
+
+- Start RStudio
+
+```{.bash}
+apptainer run --nv \
+      -B $SCRATCH/rstudiotmp/var/lib:/var/lib/rstudio-server \
+      -B $SCRATCH/rstudiotmp/var/run:/var/run/rstudio-server \
+      -B $SCRATCH/rstudiotmp/tmp:/tmp \
+         $H2_CONTAINER_LOC/rpylab_rpylab-R4.3.3-python-3.10.10-oneapi-gpu.sif rstudio
+```
+
+- Port forward
+
+```{.bash}
+ssh -L 8787:COMPUTENODE:8787 USERNAME@hoffman2.idre.ucla.edu
+```
+
+- Open web browser
+
+```{.bash}
+http://localhost:8787
+```
+
+:::
+
+## Running Jupyter
+
+::: { style="font-size: 0.80em" }
+
+This Jupyter also has TensorFlow and PyTorch installed with GPU support and MKL. There is also a R kernel in this Jupyter (same R from RStudio).
+
+- Start Jupyter
+
+```{.bash}
+apptainer run --nv \
+         $H2_CONTAINER_LOC/rpylab_rpylab-R4.3.3-python-3.10.10-oneapi-gpu.sif jupyter
+```
+
+- Port forward
+
+```{.bash}
+ssh -L 8888:COMPUTENODE:8888 USERNAME@hoffman2.idre.ucla.edu
+```
+
+- Open web browser
+
+```{.bash}
+http://localhost:8888
+```
+
+:::
+
+## Non-interactive R/Python
+
+::: { style="font-size: 0.80em" }
+
+- R
+
+```{.bash}
+apptainer run --nv \
+         $H2_CONTAINER_LOC/rpylab_rpylab-R4.3.3-python-3.10.10-oneapi-gpu.sif Rscript myscript.R
+```
+
+- Python
+
+```{.bash}
+apptainer run --nv \
+         $H2_CONTAINER_LOC/rpylab_rpylab-R4.3.3-python-3.10.10-oneapi-gpu.sif python myscript.py
+```
+
 :::
 
